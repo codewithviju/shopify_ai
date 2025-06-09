@@ -59,3 +59,58 @@ export async function getReturnPolicy() {
   // Defensive: Return a friendly message if no policy is set
   return data.data.shop.policies?.returnPolicy?.body || "No return policy set.";
 }
+
+export async function searchProductsByTitle(searchTerm) {
+  // Use * for prefix search, e.g., title:shirt*
+  const queryString = `title:${searchTerm}*`;
+  const query = `
+    {
+      products(first: 5, query: "${queryString}") {
+        edges {
+          node {
+            id
+            title
+            handle
+            featuredImage {
+              originalSrc
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await shopifyGraphQL(query);
+  const products = data.data.products.edges.map(edge => edge.node);
+  return products;
+}
+
+export async function getProductCount() {
+  const query = `
+    {
+      products {
+        totalCount
+      }
+    }
+  `;
+  const data = await shopifyGraphQL(query);
+  return data.data.products.totalCount;
+}
+
+export async function getTopProduct() {
+  const query = `
+    {
+      products(first: 1, sortKey: INVENTORY, reverse: true) {
+        edges {
+          node {
+            title
+            totalInventory
+          }
+        }
+      }
+    }
+  `;
+  const data = await shopifyGraphQL(query);
+  const topProduct = data.data.products.edges[0]?.node;
+  if (!topProduct) return "No products found.";
+  return `The product with the highest inventory is "${topProduct.title}" with ${topProduct.totalInventory} items in stock.`;
+}

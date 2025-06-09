@@ -1,6 +1,6 @@
 import express from "express";
 import { detectIntent } from "./intentDetection.js";
-import { getStoreCurrency, getReturnPolicy } from "./shopifyAPI.js";
+import { getStoreCurrency, getReturnPolicy, searchProductsByTitle } from "./shopifyAPI.js";
 
 const app = express();
 app.use(express.json());
@@ -66,11 +66,46 @@ app.post("/chat", async (req, res) => {
   } else if (intent === "return_policy") {
     const policy = await getReturnPolicy();
     answer = `Your return policy: ${policy}`;
-  } else {
+  } else if (intent === "product_count") {
+    const count = await getProductCount();
+    answer = `There are ${count} products available in your store.`;
+  } else if (intent === "top_product") {
+    answer = await getTopProduct();
+  } else if (intent === "search_product") {
+    // Extract search term from user message (basic example)
+    const searchTerm = extractSearchTerm(userMessage);
+    const products = await searchProductsByTitle(searchTerm);
+    if (products.length === 0) {
+      answer = `No products found for "${searchTerm}".`;
+    } else {
+      answer = "Here are some matching products:\n" +
+        products.map(p => `- ${p.title}`).join("\n");
+    }
+  }
+   else {
     answer = "Sorry, I couldn't understand your question.";
   }
 
   res.json({ answer });
 });
+
+function extractSearchTerm(userMessage) {
+  // Look for common search phrases and extract the term after them
+  const patterns = [
+    /find me (.+)/i,
+    /show (?:me )?products? (?:called|named)? (.+)/i,
+    /search for (.+)/i,
+    /look for (.+)/i,
+    /product (.+)/i
+  ];
+  for (const pattern of patterns) {
+    const match = userMessage.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  // Fallback: return the whole message as search term
+  return userMessage.trim();
+}
 
 app.listen(3000, () => console.log("Server running on port 3000"));

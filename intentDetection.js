@@ -9,6 +9,9 @@ export async function detectIntent(userMessage) {
 You are an intent classifier for a Shopify store chatbot. Classify the user's question into one of these intents:
 - return_policy
 - store_currency
+- product_count
+- top_product
+- search_product
 - unknown
 
 User: "${userMessage}"
@@ -20,3 +23,4 @@ Intent:
   });
   return res.choices[0].message.content.trim();
 }
+
